@@ -1,3 +1,6 @@
 [submodule "dirent"]
 	path = dirent
 	url = https://github.com/tronkko/dirent.git
+[submodule "libs/glfw"]
+	path = libs/glfw
+	url = https://github.com/glfw/glfw.git
