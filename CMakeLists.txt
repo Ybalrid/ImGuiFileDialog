@@ -11,7 +11,12 @@ add_subdirectory(libs/glfw/)
 
 file(GLOB demo_src CONFIGURE_DEPENDS *.cpp *.h *.hpp file_dialog/*.cpp file_dialog/*.hpp)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/dirent/include/ ${CMAKE_CURRENT_SOURCE_DIR}/file_dialog ${CMAKE_CURRENT_SOURCE_DIR}/libs/gl3w/)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/file_dialog ${CMAKE_CURRENT_SOURCE_DIR}/libs/gl3w/)
+
+if(WIN32)
+	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/dirent/include/)
+endif()
+
 
 add_executable(demo ${demo_src} ./libs/gl3w/GL/gl3w.c)
 
