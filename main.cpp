@@ -95,7 +95,7 @@ int main(int, char**)
 
 			if (openFileDialog)
 			{
-				if (ImGuiFileDialog::Instance()->FileDialog("Choose File",".cpp\0.h\0.hpp\0\0", ".", ""))
+				if (ImGuiFileDialog::Instance()->FileDialog("Choose File",".cpp\0.h\0.hpp\0\0", ".", false, ""))
 				{
 					if (ImGuiFileDialog::Instance()->IsOk == true)
 					{
