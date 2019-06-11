@@ -22,29 +22,33 @@ struct FileInfoStruct {
 };
 
 class ImGuiFileDialog {
- private:
+private:
   std::vector<FileInfoStruct> m_FileList;
   std::string m_SelectedFileName;
   std::string m_CurrentPath;
   std::vector<std::string> m_CurrentPath_Decomposition;
   std::string m_CurrentFilterExt;
 
- public:
+public:
   static char FileNameBuffer[MAX_FILE_DIALOG_NAME_BUFFER];
   static int FilterIndex;
   bool IsOk;
 
- public:
-  static ImGuiFileDialog* Instance() {
-    static ImGuiFileDialog* _instance = new ImGuiFileDialog();
+  static char *dirLabel;
+  static char *fileLabel;
+  static char *linkLabel;
+
+public:
+  static ImGuiFileDialog *Instance() {
+    static ImGuiFileDialog *_instance = new ImGuiFileDialog();
     return _instance;
   }
 
- public:
+public:
   ImGuiFileDialog();
   ~ImGuiFileDialog();
 
-  bool FileDialog(const char* vName, const char* vFilters = 0,
+  bool FileDialog(const char *vName, const char *vFilters = 0,
                   bool modal = true, std::string vPath = ".",
                   std::string vDefaultFileName = "");
   std::string GetFilepathName();
@@ -52,10 +56,10 @@ class ImGuiFileDialog {
   std::string GetCurrentFileName();
   std::string GetCurrentFilter();
 
- private:
+private:
   void ScanDir(std::string vPath);
   void SetCurrentDir(std::string vPath);
   void ComposeNewPath(std::vector<std::string>::iterator vIter);
 };
 
-#endif  // __IMGUI_FILE_DIALOG_H_
+#endif // __IMGUI_FILE_DIALOG_H_
