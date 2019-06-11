@@ -1,0 +1,18 @@
+language: cpp
+sudo: required
+compiler: gcc
+os: linux
+dist: xenial
+addons:
+        apt:
+                sources:
+                        - ubuntu-toolchain-r-test
+                packages:
+                        - cmake
+                        - libxrender-dev
+                        - xorg-dev
+                        - libglu1-mesa-dev
+script:
+        - cd build
+        - cmake ..
+        - make -j 2

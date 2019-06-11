@@ -11,7 +11,7 @@ This sould work on Windows, and all the other unix platforms without any issue.
 Compatibility has been checked under Windows and Linux.
 
  - Windows build : [![Build status](https://ci.appveyor.com/api/projects/status/yhdnd9w8d4ctp5uw?svg=true)](https://ci.appveyor.com/project/Ybalrid/imguifiledialog)
- - Linux build : TODO
+ - Linux build : [![Build Status](https://travis-ci.com/Ybalrid/ImGuiFileDialog.svg?branch=master)](https://travis-ci.com/Ybalrid/ImGuiFileDialog)
 
 ## How to use
 
