@@ -10,6 +10,9 @@ This sould work on Windows, and all the other unix platforms without any issue.
 
 Compatibility has been checked under Windows and Linux.
 
+ - Windows build : [![Build status](https://ci.appveyor.com/api/projects/status/yhdnd9w8d4ctp5uw?svg=true)](https://ci.appveyor.com/project/Ybalrid/imguifiledialog)
+ - Linux build : TODO
+
 ## How to use
 
 The ImGuiFileDialog widget itself is located under the file_dialog folder. Just add theses files to your project using the same method you would use to add Dear ImGui itself.
