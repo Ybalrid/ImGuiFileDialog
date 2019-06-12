@@ -18,9 +18,9 @@
 
 #include "imgui_internal.h"
 
-char* ImGuiFileDialog::dirLabel = "[Dir]";
-char* ImGuiFileDialog::fileLabel = "[File]";
-char* ImGuiFileDialog::linkLabel = "[Link]";
+const char* ImGuiFileDialog::dirLabel = "[Dir]";
+const char* ImGuiFileDialog::fileLabel = "[File]";
+const char* ImGuiFileDialog::linkLabel = "[Link]";
 inline bool ReplaceString(std::string& str, const std::string& oldStr,
                           const std::string& newStr) {
   bool found = false;
@@ -256,7 +256,8 @@ bool ImGuiFileDialog::FileDialog(const char* vName, const char* vFilters,
 
   ImVec2 size = ImGui::GetContentRegionMax() - ImVec2(0.0f, 120.0f);
 
-  ImGui::BeginChild("##FileDialog_FileList", size, true, ImGuiWindowFlags_AlwaysVerticalScrollbar);
+  ImGui::BeginChild("##FileDialog_FileList", size, true,
+                    ImGuiWindowFlags_AlwaysVerticalScrollbar);
 
   for (std::vector<FileInfoStruct>::iterator it = m_FileList.begin();
        it != m_FileList.end(); ++it) {
@@ -265,10 +266,9 @@ bool ImGuiFileDialog::FileDialog(const char* vName, const char* vFilters,
     bool show = true;
 
     std::string str;
-    if (infos.type == 'd') str = std::string(dirLabel) +" " + infos.fileName;
-    if (infos.type == 'l') str = std::string(linkLabel)+ " " + infos.fileName;
+    if (infos.type == 'd') str = std::string(dirLabel) + " " + infos.fileName;
+    if (infos.type == 'l') str = std::string(linkLabel) + " " + infos.fileName;
     if (infos.type == 'f') str = std::string(fileLabel) + " " + infos.fileName;
-
 
     if (infos.type == 'f' && m_CurrentFilterExt.size() > 0 &&
         infos.ext != m_CurrentFilterExt) {
@@ -342,18 +342,18 @@ bool ImGuiFileDialog::FileDialog(const char* vName, const char* vFilters,
     }
   }
   ImGui::Separator();
-  ImGui::Text(" ");//Dummy
+  ImGui::Text(" ");  // Dummy
   ImGui::SameLine(ImGui::GetWindowWidth() - 100);
   if (ImGui::Button("Cancel")) {
-	  IsOk = false;
-	  res = true;
+    IsOk = false;
+    res = true;
   }
 
   ImGui::SameLine(ImGui::GetWindowWidth() - 40);
 
   if (ImGui::Button("Ok")) {
-	  IsOk = true;
-	  res = true;
+    IsOk = true;
+    res = true;
   }
 
   modal ? ImGui::EndPopup() : ImGui::End();
