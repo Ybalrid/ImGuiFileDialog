@@ -36,8 +36,12 @@ int main(int, char**) {
   glfwSwapInterval(1);  // Enable vsync
   gl3wInit();
 
-  // Setup ImGui binding
-  // ImGui_ImplGlfwGL3_Init(window, true);
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  auto& io = ImGui::GetIO();
+  io.Fonts->AddFontDefault();
+
+  // Setup ImGui bindings
   ImGui_ImplGlfw_InitForOpenGL(window, true);
   ImGui_ImplOpenGL3_Init("#version 140");
 
@@ -73,7 +77,7 @@ int main(int, char**) {
   bool show_demo_window = true;
   bool show_another_window = false;
   ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-
+  int win_x, win_y;
   // Main loop
   while (!glfwWindowShouldClose(window)) {
     // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to
@@ -87,6 +91,7 @@ int main(int, char**) {
     glfwPollEvents();
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
 
     // 1. Show a simple window.
     // Tip: if we don't call ImGui::Begin()/ImGui::End() the widgets

@@ -217,8 +217,9 @@ void ImGuiFileDialog::ComposeNewPath(std::vector<std::string>::iterator vIter) {
     m_CurrentPath = *vIter + DIRECTORY_SEPARATOR_STR;
 }
 
-bool BeginPopupModalSerialized(const char* name, bool* p_open,
-                               ImGuiWindowFlags flags) {
+namespace ImGui {
+bool BeginPopupModalSerialized(const char* name, bool* p_open = nullptr,
+                               ImGuiWindowFlags flags = 0) {
   ImGuiContext& g = *GImGui;
   ImGuiWindow* window = g.CurrentWindow;
   const ImGuiID id = window->GetID(name);
@@ -248,6 +249,7 @@ bool BeginPopupModalSerialized(const char* name, bool* p_open,
   }
   return is_open;
 }
+}  // namespace ImGui
 
 bool ImGuiFileDialog::FileDialog(const char* vName, const char* vFilters,
                                  bool modal, std::string vPath,
@@ -257,7 +259,7 @@ bool ImGuiFileDialog::FileDialog(const char* vName, const char* vFilters,
   IsOk = false;
 
   modal ? ImGui::OpenPopup(vName),
-      ImGui::BeginPopupModal(vName) : ImGui::Begin(vName);
+      ImGui::BeginPopupModalSerialized(vName) : ImGui::Begin(vName);
 
   if (vPath.size() == 0) vPath = ".";
 

@@ -28,6 +28,8 @@ git submodule update --init --recursive
 
 All the other files in this repository is the code to a test program. You can build it to play with it, and reference the calls in "main.cpp" to see how the API works.
 
+CMakeFiles here will build the test program
+
 ## Examples
 An example of the File Dialog integrated within the ImGui Demo App
 
