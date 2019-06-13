@@ -7,15 +7,13 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #endif
-
 #include <dirent.h>
-
-#include "imgui.h"
 
 #define IMGUI_DEFINE_MATH_OPERATORS
 
 #include <algorithm>
 
+#include "imgui.h"
 #include "imgui_internal.h"
 
 const char* ImGuiFileDialog::dirLabel = "[Dir]";
@@ -217,6 +215,38 @@ void ImGuiFileDialog::ComposeNewPath(std::vector<std::string>::iterator vIter) {
     m_CurrentPath = *vIter + DIRECTORY_SEPARATOR_STR + m_CurrentPath;
   else
     m_CurrentPath = *vIter + DIRECTORY_SEPARATOR_STR;
+}
+
+bool BeginPopupModalSerialized(const char* name, bool* p_open,
+                               ImGuiWindowFlags flags) {
+  ImGuiContext& g = *GImGui;
+  ImGuiWindow* window = g.CurrentWindow;
+  const ImGuiID id = window->GetID(name);
+  if (!ImGui::IsPopupOpen(id)) {
+    g.NextWindowData.ClearFlags();  // We behave like Begin() and need to
+                                    // consume those values
+    return false;
+  }
+
+  // Center modal windows by default
+  // FIXME: Should test for (PosCond & window->SetWindowPosAllowFlags) with the
+  // upcoming window.
+  if (g.NextWindowData.PosCond == 0)
+    ImGui::SetNextWindowPos(g.IO.DisplaySize * 0.5f, ImGuiCond_Appearing,
+                            ImVec2(0.5f, 0.5f));
+
+  flags |= ImGuiWindowFlags_Popup | ImGuiWindowFlags_Modal |
+           ImGuiWindowFlags_NoCollapse;
+  const bool is_open = ImGui::Begin(name, p_open, flags);
+  if (!is_open ||
+      (p_open && !*p_open))  // NB: is_open can be 'false' when the popup is
+                             // completely clipped (e.g. zero size display)
+  {
+    ImGui::EndPopup();
+    if (is_open) ImGui::ClosePopupToLevel(g.BeginPopupStack.Size, true);
+    return false;
+  }
+  return is_open;
 }
 
 bool ImGuiFileDialog::FileDialog(const char* vName, const char* vFilters,

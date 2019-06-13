@@ -9,9 +9,23 @@ set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
 add_subdirectory(libs/glfw/)
 
-file(GLOB demo_src CONFIGURE_DEPENDS *.cpp *.h *.hpp file_dialog/*.cpp file_dialog/*.hpp)
+file(GLOB demo_src CONFIGURE_DEPENDS 
+*.cpp 
+*.h 
+*.hpp 
+file_dialog/*.cpp 
+file_dialog/*.hpp 
+imgui/*.cpp 
+imgui/*.h 
+imgui/examples/imgui_impl_opengl3.* 
+imgui/examples/imgui_impl_glfw.*)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/file_dialog ${CMAKE_CURRENT_SOURCE_DIR}/libs/gl3w/)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR} 
+${CMAKE_CURRENT_SOURCE_DIR}/file_dialog 
+${CMAKE_CURRENT_SOURCE_DIR}/libs/gl3w/
+	${CMAKE_CURRENT_SOURCE_DIR}/imgui/
+	${CMAKE_CURRENT_SOURCE_DIR}/imgui/examples
+)
 
 if(WIN32)
 	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/dirent/include/)
