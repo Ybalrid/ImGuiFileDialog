@@ -28,6 +28,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/libs/gl3w/
 )
 
 if(WIN32)
+	#At this point, we are using "dirent for Win32"
 	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/dirent/include/)
 endif()
 
@@ -35,5 +36,11 @@ endif()
 add_executable(demo ${demo_src} ./libs/gl3w/GL/gl3w.c)
 
 target_link_libraries(demo glfw OpenGL::GL)
+
+#Set the starter project and the debug directory for visual studio:
+if (WIN32)
+	set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT demo)
+    set_target_properties(demo PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+endif ()
 
 
