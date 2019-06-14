@@ -16,6 +16,27 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 
+#ifdef WIN32
+std::string utf8_encode(const std::wstring& wideString) {
+  // If it's empty, just don't bother
+  if (wideString.empty()) return std::string();
+
+  // Compute the requred size to store the string via Windows API
+  const int requiredSize = WideCharToMultiByte(
+      CP_UTF8, 0, &wideString[0], (int)wideString.size(), NULL, 0, NULL, NULL);
+
+  // Allocate string fo the wanted size
+  std::string byteSTring(requiredSize, 0);
+
+  // Convert using Windows API
+  WideCharToMultiByte(CP_UTF8, 0, &wideString[0], (int)wideString.size(),
+                      &byteSTring[0], requiredSize, NULL, NULL);
+
+  // Return the string
+  return byteSTring;
+}
+#endif
+
 const char* ImGuiFileDialog::dirLabel = "[Dir]";
 const char* ImGuiFileDialog::fileLabel = "[File]";
 const char* ImGuiFileDialog::linkLabel = "[Link]";
@@ -49,16 +70,17 @@ inline std::vector<std::string> splitStringVector(const std::string& text,
 inline void AppendToBuffer(char* vBuffer, int vBufferLen, std::string vStr) {
   std::string st = vStr;
   if (st != "" && st != "\n") ReplaceString(st, "\n", "");
-  int slen = strlen(vBuffer);
-  vBuffer[slen] = '\0';
+  const size_t stringLen = strlen(vBuffer);
+  vBuffer[stringLen] = '\0';
   std::string str = std::string(vBuffer);
   if (str.size() > 0) str += "\n";
   str += vStr;
   int len = vBufferLen - 1;
-  if (len > str.size()) len = str.size();
-#ifdef MINGW32
+  if (len > str.size()) len = int(str.size());
+#ifdef WIN32
   strncpy_s(vBuffer, vBufferLen, str.c_str(), len);
 #else
+  // TODO replace this with manual checks and memcpy, or use "safe C" on linux
   strncpy(vBuffer, str.c_str(), len);
 #endif
   vBuffer[len] = '\0';
@@ -70,7 +92,6 @@ char ImGuiFileDialog::FileNameBuffer[MAX_FILE_DIALOG_NAME_BUFFER] = "";
 int ImGuiFileDialog::FilterIndex = 0;
 
 ImGuiFileDialog::ImGuiFileDialog() : IsOk(false) {}
-
 ImGuiFileDialog::~ImGuiFileDialog() {}
 
 /* Alphabetical sorting */
@@ -114,8 +135,8 @@ void ImGuiFileDialog::ScanDir(std::string vPath) {
     }
     if (currentDir != 0) {
 #ifdef WIN32
-      std::wstring ws(currentDir->wdirp->patt);
-      m_CurrentPath = std::string(ws.begin(), ws.end());
+      const std::wstring ws(currentDir->wdirp->patt);
+      m_CurrentPath = utf8_encode(ws);
 #else
       char rawPath[PATH_MAX + 1];
       realpath(vPath.c_str(), rawPath);
@@ -129,11 +150,8 @@ void ImGuiFileDialog::ScanDir(std::string vPath) {
       return;
     }
   }
-  // std::cerr << "scanning files in " << vPath << "\n";
   /* Scan files in directory */
   n = scandir(vPath.c_str(), &files, NULL, alphaSort);
-
-  // std::cerr << "n is " << n << "\n";
 
   if (n >= 0) {
     for (i = 0; i < n; i++) {
@@ -146,6 +164,7 @@ void ImGuiFileDialog::ScanDir(std::string vPath) {
 
       if (infos.fileName != ".") {
         switch (ent->d_type) {
+          default:  // If you don't know, then it's just a file
           case DT_REG:
             infos.type = 'f';
             break;
@@ -173,9 +192,6 @@ void ImGuiFileDialog::ScanDir(std::string vPath) {
   }
 
   std::sort(m_FileList.begin(), m_FileList.end(), stringComparator);
-
-  //  for (auto& file : m_FileList) std::cout << "file : " << file.fileName <<
-  //  "\n";
 }
 
 void ImGuiFileDialog::SetCurrentDir(std::string vPath) {
@@ -186,8 +202,8 @@ void ImGuiFileDialog::SetCurrentDir(std::string vPath) {
   }
   if (dir != 0) {
 #ifdef WIN32
-    std::wstring ws(dir->wdirp->patt);
-    m_CurrentPath = std::string(ws.begin(), ws.end());
+    const std::wstring ws(dir->wdirp->patt);
+    m_CurrentPath = utf8_encode(ws);
 #else
     char rawPath[PATH_MAX + 1];
     realpath(vPath.c_str(), rawPath);
@@ -201,8 +217,10 @@ void ImGuiFileDialog::SetCurrentDir(std::string vPath) {
   }
 }
 
+// TODO it seems that this can be a bit buggy on Linux...?
 void ImGuiFileDialog::ComposeNewPath(std::vector<std::string>::iterator vIter) {
-  m_CurrentPath = "";
+  m_CurrentPath.clear();
+
   while (vIter != m_CurrentPath_Decomposition.begin()) {
     if (m_CurrentPath.size() > 0)
       m_CurrentPath = *vIter + DIRECTORY_SEPARATOR_STR + m_CurrentPath;
@@ -265,7 +283,6 @@ int TabCompletionCallbackFileList(ImGuiTextEditCallbackData* data) {
       fileDialogPtr->GetCurrentFileList();
 
   const std::string currentInputContent = std::string(data->Buf);
-  // std::cerr << "Currently contains \"" << currentInputContent << "\"\n";
 
   if (currentInputContent.empty()) return 0;
 
@@ -287,15 +304,13 @@ int TabCompletionCallbackFileList(ImGuiTextEditCallbackData* data) {
     if (pos != std::string::npos && pos == 0) matches.push_back(fileName);
   }
 
-  // std::cerr << "Current input matches " << matches.size() << " files\n";
-
   // if there's no matches, do nothing
   if (matches.empty()) return 0;
 
   // if there's only one match, replace input
   if (matches.size() == 1) {
     // replace current input by matches[0]
-    data->DeleteChars(0, currentInputContent.size());
+    data->DeleteChars(0, int(currentInputContent.size()));
     data->InsertChars(0, matches[0].c_str());
     return 0;
   }
@@ -323,7 +338,7 @@ int TabCompletionCallbackFileList(ImGuiTextEditCallbackData* data) {
     commonSubString = commonSubString.substr(0, c);
 
     // Replace content of input field
-    data->DeleteChars(0, currentInputContent.size());
+    data->DeleteChars(0, int(currentInputContent.size()));
     data->InsertChars(0, commonSubString.c_str());
   }
 
@@ -442,11 +457,9 @@ bool ImGuiFileDialog::FileDialog(const char* vName, const char* vFilters,
     focusKeyboardToTextInput = true;
     ResetBuffer(FileNameBuffer);
   }
-
   ImGui::EndChild();
 
   ImGui::Text("File Name : ");
-
   ImGui::SameLine();
 
   float width = ImGui::GetContentRegionAvailWidth();
@@ -456,8 +469,9 @@ bool ImGuiFileDialog::FileDialog(const char* vName, const char* vFilters,
       "##FileName", FileNameBuffer, MAX_FILE_DIALOG_NAME_BUFFER,
       ImGuiInputTextFlags_CallbackCompletion |
           ImGuiInputTextFlags_EnterReturnsTrue,
-      TabCompletionCallbackFileList, (void*)this);
+      TabCompletionCallbackFileList, static_cast<void*>(this));
 
+  // Force focus back to the text input area if last frame lost focus
   if (focusKeyboardToTextInput) {
     ImGui::SetKeyboardFocusHere(0);
     focusKeyboardToTextInput = false;
@@ -482,7 +496,8 @@ bool ImGuiFileDialog::FileDialog(const char* vName, const char* vFilters,
           // Append content of buffer to current path
           m_CurrentPath = m_CurrentPath + std::string(DIRECTORY_SEPARATOR_STR) +
                           std::string(FileNameBuffer);
-          m_CurrentPath_Decomposition = splitStringVector(m_CurrentPath, DIRECTORY_SEPARATOR_CHAR);
+          m_CurrentPath_Decomposition =
+              splitStringVector(m_CurrentPath, DIRECTORY_SEPARATOR_CHAR);
           // Reset the UI to the new folder
           ResetBuffer(FileNameBuffer);
           m_FileList.clear();
@@ -548,8 +563,10 @@ std::string ImGuiFileDialog::GetFilepathName() const {
 
 std::string ImGuiFileDialog::GetCurrentPath() const {
 #ifdef WIN32
+  // This fullpath starts with a drive letter
   return m_CurrentPath;
 #else
+  // Unix fullpaths starts with /
   return "/" + m_CurrentPath;
 #endif
 }

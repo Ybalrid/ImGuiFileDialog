@@ -1,6 +1,8 @@
 #ifndef __IMGUI_FILE_DIALOG_H_
 #define __IMGUI_FILE_DIALOG_H_
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 
 #include <string>
 #include <vector>
