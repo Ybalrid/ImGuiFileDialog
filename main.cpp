@@ -38,7 +38,7 @@ int main(int, char**) {
 
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
-  auto& io = ImGui::GetIO();
+  ImGuiIO& io = ImGui::GetIO();
   io.Fonts->AddFontDefault();
 
   // Setup ImGui bindings
