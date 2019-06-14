@@ -251,12 +251,90 @@ bool BeginPopupModalSerialized(const char* name, bool* p_open = 0,
 }
 }  // namespace ImGui
 
+int TabCompletionCallbackFileList(ImGuiTextEditCallbackData* data) {
+  if (data->EventFlag != ImGuiInputTextFlags_CallbackCompletion)
+    return 0;  // Only handle completion in this callback
+
+  // Get the list of files
+  ImGuiFileDialog* fileDialogPtr =
+      reinterpret_cast<ImGuiFileDialog*>(data->UserData);
+
+  const std::vector<FileInfoStruct>& currentDirFileList =
+      fileDialogPtr->GetCurrentFileList();
+
+  const std::string currentInputContent = std::string(data->Buf);
+  // std::cerr << "Currently contains \"" << currentInputContent << "\"\n";
+
+  if (currentInputContent.empty()) return 0;
+
+  std::vector<std::string> matches;
+  const std::string currentFilterExt = fileDialogPtr->GetCurrentFilter();
+
+  for (size_t i = 0; i < currentDirFileList.size(); ++i) {
+    const FileInfoStruct& currentFile = currentDirFileList[i];
+
+    // Only match visible files:
+    if (currentFile.type == 'f' && currentFilterExt.size() > 0 &&
+        currentFile.ext != currentFilterExt)
+      continue;
+
+    // Extract file name from file info stcture and compare it
+    const std::string& fileName = currentDirFileList[i].fileName;
+    const size_t pos = fileName.find(currentInputContent);
+    // if the match is at the start of the string, push
+    if (pos != std::string::npos && pos == 0) matches.push_back(fileName);
+  }
+
+  // std::cerr << "Current input matches " << matches.size() << " files\n";
+
+  // if there's no matches, do nothing
+  if (matches.empty()) return 0;
+
+  // if there's only one match, replace input
+  if (matches.size() == 1) {
+    // replace current input by matches[0]
+    data->DeleteChars(0, currentInputContent.size());
+    data->InsertChars(0, matches[0].c_str());
+    return 0;
+  }
+
+  // If there's multiple matches, find the common substring
+  if (matches.size() > 1) {
+    // std::cerr << "More than one singe matches, finding common
+    // substring...\n";
+
+    // Extract the common substring
+    std::string commonSubString = matches[0];
+
+    size_t c;
+    for (c = 0; c < commonSubString.size(); ++c) {
+      bool same = true;
+      const char current = matches[0][c];
+      for (size_t word = 1; word < matches.size(); ++word) {
+        if (matches[word][c] != current) {
+          same = false;
+          break;
+        }
+      }
+      if (!same) break;
+    }
+    commonSubString = commonSubString.substr(0, c);
+
+    // Replace content of input field
+    data->DeleteChars(0, currentInputContent.size());
+    data->InsertChars(0, commonSubString.c_str());
+  }
+
+  return 0;
+}
+
 bool ImGuiFileDialog::FileDialog(const char* vName, const char* vFilters,
                                  bool modal, std::string vPath,
                                  std::string vDefaultFileName) {
   bool res = false;
-
+  static bool focusKeyboardToTextInput = true;
   IsOk = false;
+  bool shortcutValidate = false;
 
   modal ? ImGui::OpenPopup(vName),
       ImGui::BeginPopupModalSerialized(vName) : ImGui::Begin(vName);
@@ -275,16 +353,33 @@ bool ImGuiFileDialog::FileDialog(const char* vName, const char* vFilters,
 
   // show current path
   bool pathClick = false;
-  for (std::vector<std::string>::iterator itPathDecomp =
-           m_CurrentPath_Decomposition.begin();
-       itPathDecomp != m_CurrentPath_Decomposition.end(); ++itPathDecomp) {
-    if (itPathDecomp != m_CurrentPath_Decomposition.begin()) ImGui::SameLine();
-    if (ImGui::Button((*itPathDecomp).c_str())) {
-      ComposeNewPath(itPathDecomp);
-      pathClick = true;
-      break;
-    }
+
+#ifndef WIN32
+  // On non-windows platform, path starts with a /
+  if (ImGui::Button(DIRECTORY_SEPARATOR_STR)) {
+    SetCurrentDir(DIRECTORY_SEPARATOR_STR);
+    path_click = true;
+    focusKeyboardToTextInput = true;
   }
+  ImGui::SameLine();
+#endif
+
+  if (!pathClick)
+    for (std::vector<std::string>::iterator itPathDecomp =
+             m_CurrentPath_Decomposition.begin();
+         itPathDecomp != m_CurrentPath_Decomposition.end(); ++itPathDecomp) {
+      if (itPathDecomp != m_CurrentPath_Decomposition.begin())
+        ImGui::SameLine();
+
+      if (ImGui::Button((*itPathDecomp).c_str())) {
+        ComposeNewPath(itPathDecomp);
+        pathClick = true;
+        break;
+      }
+      // Display path break symbol between buttons
+      ImGui::SameLine();
+      ImGui::Text(DIRECTORY_SEPARATOR_STR);
+    }
 
   ImVec2 size = ImGui::GetContentRegionMax() - ImVec2(0.0f, 120.0f);
 
@@ -339,6 +434,9 @@ bool ImGuiFileDialog::FileDialog(const char* vName, const char* vFilters,
       if (m_CurrentPath_Decomposition[1] == "")
         m_CurrentPath_Decomposition.erase(m_CurrentPath_Decomposition.end() -
                                           1);
+
+    focusKeyboardToTextInput = true;
+    ResetBuffer(FileNameBuffer);
   }
 
   ImGui::EndChild();
@@ -350,8 +448,46 @@ bool ImGuiFileDialog::FileDialog(const char* vName, const char* vFilters,
   float width = ImGui::GetContentRegionAvailWidth();
   if (vFilters != 0) width -= 120.0f;
   ImGui::PushItemWidth(width);
-  ImGui::InputText("##FileName", FileNameBuffer, MAX_FILE_DIALOG_NAME_BUFFER);
+  bool pressedReturnInTextField = ImGui::InputText(
+      "##FileName", FileNameBuffer, MAX_FILE_DIALOG_NAME_BUFFER,
+      ImGuiInputTextFlags_CallbackCompletion |
+          ImGuiInputTextFlags_EnterReturnsTrue,
+      TabCompletionCallbackFileList, (void*)this);
+
+  if (focusKeyboardToTextInput) {
+    ImGui::SetKeyboardFocusHere(0);
+    focusKeyboardToTextInput = false;
+  }
+
   ImGui::PopItemWidth();
+
+  // User pressed Return, we need to have the following behavior :
+  // If current input is found in current directory :
+  // If current input is a file, select file
+  // If current input is a directory, navigate to
+  // TODO in case of saving a file, wee should append filter extension and
+  // return IsOK = true
+  if (pressedReturnInTextField) {
+    for (size_t i = 0; i < m_FileList.size(); ++i) {
+      const FileInfoStruct& currentFile = m_FileList[i];
+      if (currentFile.fileName == FileNameBuffer) {
+        if (currentFile.type == 'f') {
+          shortcutValidate = true;
+          break;
+        } else {
+          // Append content of buffer to current path
+          SetCurrentDir(m_CurrentPath + DIRECTORY_SEPARATOR_STR +
+                        FileNameBuffer);
+          // Reset the UI to the new folder
+          ResetBuffer(FileNameBuffer);
+          m_FileList.clear();
+          ScanDir(m_CurrentPath);
+          focusKeyboardToTextInput = true;
+          break;
+        }
+      }
+    }
+  }
 
   if (vFilters != 0) {
     ImGui::SameLine();
@@ -379,13 +515,15 @@ bool ImGuiFileDialog::FileDialog(const char* vName, const char* vFilters,
   if (ImGui::Button("Cancel")) {
     IsOk = false;
     res = true;
+    focusKeyboardToTextInput = true;
   }
 
   ImGui::SameLine(ImGui::GetWindowWidth() - 40);
 
-  if (ImGui::Button("Ok")) {
+  if (ImGui::Button("Ok") || shortcutValidate) {
     IsOk = true;
     res = true;
+    focusKeyboardToTextInput = true;
   }
 
   modal ? ImGui::EndPopup() : ImGui::End();
@@ -397,11 +535,11 @@ bool ImGuiFileDialog::FileDialog(const char* vName, const char* vFilters,
   return res;
 }
 
-std::string ImGuiFileDialog::GetFilepathName() {
+std::string ImGuiFileDialog::GetFilepathName() const {
   return GetCurrentPath() + DIRECTORY_SEPARATOR_STR + GetCurrentFileName();
 }
 
-std::string ImGuiFileDialog::GetCurrentPath() {
+std::string ImGuiFileDialog::GetCurrentPath() const {
 #ifdef WIN32
   return m_CurrentPath;
 #else
@@ -409,8 +547,14 @@ std::string ImGuiFileDialog::GetCurrentPath() {
 #endif
 }
 
-std::string ImGuiFileDialog::GetCurrentFileName() {
+std::string ImGuiFileDialog::GetCurrentFileName() const {
   return std::string(FileNameBuffer);
 }
 
-std::string ImGuiFileDialog::GetCurrentFilter() { return m_CurrentFilterExt; }
+std::string ImGuiFileDialog::GetCurrentFilter() const {
+  return m_CurrentFilterExt;
+}
+
+const std::vector<FileInfoStruct>& ImGuiFileDialog::GetCurrentFileList() const {
+  return m_FileList;
+}

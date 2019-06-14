@@ -1,5 +1,6 @@
 #ifndef __IMGUI_FILE_DIALOG_H_
 #define __IMGUI_FILE_DIALOG_H_
+#define NOMINMAX
 
 #include <string>
 #include <vector>
@@ -51,10 +52,11 @@ class ImGuiFileDialog {
   bool FileDialog(const char* vName, const char* vFilters = 0,
                   bool modal = true, std::string vPath = ".",
                   std::string vDefaultFileName = "");
-  std::string GetFilepathName();
-  std::string GetCurrentPath();
-  std::string GetCurrentFileName();
-  std::string GetCurrentFilter();
+  std::string GetFilepathName() const;
+  std::string GetCurrentPath() const;
+  std::string GetCurrentFileName() const;
+  std::string GetCurrentFilter() const;
+  std::vector<FileInfoStruct> const& GetCurrentFileList() const;
 
  private:
   void ScanDir(std::string vPath);
