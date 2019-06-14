@@ -46,7 +46,6 @@ int main(int, char**) {
   ImGui_ImplOpenGL3_Init("#version 140");
 
   // Setup style
-  ImGui::StyleColorsClassic();
   // ImGui::StyleColorsDark();
 
   // Load Fonts
