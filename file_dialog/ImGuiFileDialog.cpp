@@ -358,7 +358,7 @@ bool ImGuiFileDialog::FileDialog(const char* vName, const char* vFilters,
   // On non-windows platform, path starts with a /
   if (ImGui::Button(DIRECTORY_SEPARATOR_STR)) {
     SetCurrentDir(DIRECTORY_SEPARATOR_STR);
-    path_click = true;
+    pathClick = true;
     focusKeyboardToTextInput = true;
   }
   ImGui::SameLine();
