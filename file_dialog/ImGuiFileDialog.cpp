@@ -368,19 +368,21 @@ bool ImGuiFileDialog::FileDialog(const char* vName, const char* vFilters,
     for (std::vector<std::string>::iterator itPathDecomp =
              m_CurrentPath_Decomposition.begin();
          itPathDecomp != m_CurrentPath_Decomposition.end(); ++itPathDecomp) {
-      if (itPathDecomp != m_CurrentPath_Decomposition.begin())
+      if (!(*itPathDecomp).empty()) {
+        if (itPathDecomp != m_CurrentPath_Decomposition.begin())
+          ImGui::SameLine();
+        if (ImGui::Button((*itPathDecomp).c_str())) {
+          ComposeNewPath(itPathDecomp);
+          pathClick = true;
+          break;
+        }
+
+        // Display path break symbol between buttons
         ImGui::SameLine();
-
-      if (ImGui::Button((*itPathDecomp).c_str())) {
-        ComposeNewPath(itPathDecomp);
-        pathClick = true;
-        break;
+        ImGui::Text(DIRECTORY_SEPARATOR_STR);
       }
-      // Display path break symbol between buttons
-      ImGui::SameLine();
-      ImGui::Text(DIRECTORY_SEPARATOR_STR);
     }
-
+  ImGui::SameLine(), ImGui::Text("");  // clean break
   ImVec2 size = ImGui::GetContentRegionMax() - ImVec2(0.0f, 120.0f);
 
   ImGui::BeginChild("##FileDialog_FileList", size, true,
