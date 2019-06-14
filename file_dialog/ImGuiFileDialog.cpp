@@ -218,7 +218,7 @@ void ImGuiFileDialog::ComposeNewPath(std::vector<std::string>::iterator vIter) {
 }
 
 namespace ImGui {
-bool BeginPopupModalSerialized(const char* name, bool* p_open = nullptr,
+bool BeginPopupModalSerialized(const char* name, bool* p_open = 0,
                                ImGuiWindowFlags flags = 0) {
   ImGuiContext& g = *GImGui;
   ImGuiWindow* window = g.CurrentWindow;
