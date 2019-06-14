@@ -480,8 +480,9 @@ bool ImGuiFileDialog::FileDialog(const char* vName, const char* vFilters,
           break;
         } else {
           // Append content of buffer to current path
-          SetCurrentDir(m_CurrentPath + DIRECTORY_SEPARATOR_STR +
-                        FileNameBuffer);
+          m_CurrentPath = m_CurrentPath + std::string(DIRECTORY_SEPARATOR_STR) +
+                          std::string(FileNameBuffer);
+          m_CurrentPath_Decomposition = splitStringVector(m_CurrentPath, DIRECTORY_SEPARATOR_CHAR);
           // Reset the UI to the new folder
           ResetBuffer(FileNameBuffer);
           m_FileList.clear();
