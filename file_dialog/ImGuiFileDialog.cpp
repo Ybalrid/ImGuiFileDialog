@@ -69,7 +69,7 @@ inline void ResetBuffer(char* vBuffer) { vBuffer[0] = '\0'; }
 char ImGuiFileDialog::FileNameBuffer[MAX_FILE_DIALOG_NAME_BUFFER] = "";
 int ImGuiFileDialog::FilterIndex = 0;
 
-ImGuiFileDialog::ImGuiFileDialog() {}
+ImGuiFileDialog::ImGuiFileDialog() : IsOk(false) {}
 
 ImGuiFileDialog::~ImGuiFileDialog() {}
 
@@ -78,7 +78,7 @@ static int alphaSort(const dirent** a, const dirent** b) {
   return strcoll((*a)->d_name, (*b)->d_name);
 }
 
-static bool stringComparator(FileInfoStruct a, FileInfoStruct b) {
+static bool stringComparator(FileInfo a, FileInfo b) {
   bool res;
   if (a.type != b.type)
     res = (a.type < b.type);
@@ -139,7 +139,7 @@ void ImGuiFileDialog::ScanDir(std::string vPath) {
     for (i = 0; i < n; i++) {
       struct dirent* ent = files[i];
 
-      FileInfoStruct infos;
+      FileInfo infos;
 
       infos.fileName = ent->d_name;
       // std::cout << "scanned filename is " << infos.fileName << "\n";
@@ -208,7 +208,7 @@ void ImGuiFileDialog::ComposeNewPath(std::vector<std::string>::iterator vIter) {
       m_CurrentPath = *vIter + DIRECTORY_SEPARATOR_STR + m_CurrentPath;
     else
       m_CurrentPath = *vIter;
-    vIter--;
+    --vIter;
   }
 
   if (m_CurrentPath.size() > 0)
@@ -218,6 +218,8 @@ void ImGuiFileDialog::ComposeNewPath(std::vector<std::string>::iterator vIter) {
 }
 
 namespace ImGui {
+// This thing should do the exact same thing as BeginPopupModal, but without the
+// field that prevent it to be saved to the INI file
 bool BeginPopupModalSerialized(const char* name, bool* p_open = 0,
                                ImGuiWindowFlags flags = 0) {
   ImGuiContext& g = *GImGui;
@@ -259,7 +261,7 @@ int TabCompletionCallbackFileList(ImGuiTextEditCallbackData* data) {
   ImGuiFileDialog* fileDialogPtr =
       reinterpret_cast<ImGuiFileDialog*>(data->UserData);
 
-  const std::vector<FileInfoStruct>& currentDirFileList =
+  const std::vector<FileInfo>& currentDirFileList =
       fileDialogPtr->GetCurrentFileList();
 
   const std::string currentInputContent = std::string(data->Buf);
@@ -271,7 +273,7 @@ int TabCompletionCallbackFileList(ImGuiTextEditCallbackData* data) {
   const std::string currentFilterExt = fileDialogPtr->GetCurrentFilter();
 
   for (size_t i = 0; i < currentDirFileList.size(); ++i) {
-    const FileInfoStruct& currentFile = currentDirFileList[i];
+    const FileInfo& currentFile = currentDirFileList[i];
 
     // Only match visible files:
     if (currentFile.type == 'f' && currentFilterExt.size() > 0 &&
@@ -388,9 +390,9 @@ bool ImGuiFileDialog::FileDialog(const char* vName, const char* vFilters,
   ImGui::BeginChild("##FileDialog_FileList", size, true,
                     ImGuiWindowFlags_AlwaysVerticalScrollbar);
 
-  for (std::vector<FileInfoStruct>::iterator it = m_FileList.begin();
+  for (std::vector<FileInfo>::iterator it = m_FileList.begin();
        it != m_FileList.end(); ++it) {
-    FileInfoStruct infos = *it;
+    FileInfo infos = *it;
 
     bool show = true;
 
@@ -471,7 +473,7 @@ bool ImGuiFileDialog::FileDialog(const char* vName, const char* vFilters,
   // return IsOK = true
   if (pressedReturnInTextField) {
     for (size_t i = 0; i < m_FileList.size(); ++i) {
-      const FileInfoStruct& currentFile = m_FileList[i];
+      const FileInfo& currentFile = m_FileList[i];
       if (currentFile.fileName == FileNameBuffer) {
         if (currentFile.type == 'f') {
           shortcutValidate = true;
@@ -488,6 +490,7 @@ bool ImGuiFileDialog::FileDialog(const char* vName, const char* vFilters,
           break;
         }
       }
+      focusKeyboardToTextInput = true;
     }
   }
 
@@ -504,6 +507,7 @@ bool ImGuiFileDialog::FileDialog(const char* vName, const char* vFilters,
       while (*p) {
         if (FilterIndex == itemIdx) {
           m_CurrentFilterExt = std::string(p);
+          if (m_CurrentFilterExt == ".*") m_CurrentFilterExt.clear();
           break;
         }
         p += strlen(p) + 1;
@@ -557,6 +561,6 @@ std::string ImGuiFileDialog::GetCurrentFilter() const {
   return m_CurrentFilterExt;
 }
 
-const std::vector<FileInfoStruct>& ImGuiFileDialog::GetCurrentFileList() const {
+const std::vector<FileInfo>& ImGuiFileDialog::GetCurrentFileList() const {
   return m_FileList;
 }
