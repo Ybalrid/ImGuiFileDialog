@@ -99,7 +99,8 @@ static int alphaSort(const dirent** a, const dirent** b) {
   return strcoll((*a)->d_name, (*b)->d_name);
 }
 
-static bool stringComparator(FileInfo a, FileInfo b) {
+static bool stringComparator(ImGuiFileDialog::FileInfo a,
+                             ImGuiFileDialog::FileInfo b) {
   bool res;
   if (a.type != b.type)
     res = (a.type < b.type);
@@ -279,7 +280,7 @@ int TabCompletionCallbackFileList(ImGuiTextEditCallbackData* data) {
   ImGuiFileDialog* fileDialogPtr =
       reinterpret_cast<ImGuiFileDialog*>(data->UserData);
 
-  const std::vector<FileInfo>& currentDirFileList =
+  const std::vector<ImGuiFileDialog::FileInfo>& currentDirFileList =
       fileDialogPtr->GetCurrentFileList();
 
   const std::string currentInputContent = std::string(data->Buf);
@@ -290,7 +291,7 @@ int TabCompletionCallbackFileList(ImGuiTextEditCallbackData* data) {
   const std::string currentFilterExt = fileDialogPtr->GetCurrentFilter();
 
   for (size_t i = 0; i < currentDirFileList.size(); ++i) {
-    const FileInfo& currentFile = currentDirFileList[i];
+    const ImGuiFileDialog::FileInfo& currentFile = currentDirFileList[i];
 
     // Only match visible files:
     if (currentFile.type == 'f' && currentFilterExt.size() > 0 &&
@@ -579,6 +580,7 @@ std::string ImGuiFileDialog::GetCurrentFilter() const {
   return m_CurrentFilterExt;
 }
 
-const std::vector<FileInfo>& ImGuiFileDialog::GetCurrentFileList() const {
+const std::vector<ImGuiFileDialog::FileInfo>&
+ImGuiFileDialog::GetCurrentFileList() const {
   return m_FileList;
 }

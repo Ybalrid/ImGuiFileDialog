@@ -17,17 +17,17 @@
 #define DIRECTORY_SEPARATOR_STR "/"
 #endif
 
-/// Represent a file
-struct FileInfo {
-  char type;
-  std::string filePath;
-  std::string fileName;
-  std::string ext;
-};
-
 /// Main class of the file dialog. This is a singleton. Use
 /// ImGuiFileDialog::Instance() to create one
 class ImGuiFileDialog {
+ public:
+  struct FileInfo {
+    char type;
+    std::string filePath;
+    std::string fileName;
+    std::string ext;
+  };
+
  private:
   /// List of files in current directory
   std::vector<FileInfo> m_FileList;
